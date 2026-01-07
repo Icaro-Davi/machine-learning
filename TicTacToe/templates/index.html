@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Tic Tac Toe AI</title>
+    <style>
+        body { font-family: Arial; text-align: center; }
+        canvas { border: 2px solid black; }
+    </style>
+</head>
+<body>
+<h2>Tic-Tac-Toe vs AI</h2>
+
+<canvas id="board" width="300" height="300"></canvas><br><br>
+<button onclick="resetGame()">Reset</button>
+
+<script>
+const player = -1;
+const ia = 1;
+
+const canvas = document.getElementById("board");
+const ctx = canvas.getContext("2d");
+const size = 100;
+let board = Array(9).fill(0);
+
+function draw() {
+    ctx.clearRect(0,0,300,300);
+    ctx.lineWidth = 4;
+
+    for (let i = 1; i < 3; i++) {
+        ctx.beginPath();
+        ctx.moveTo(0, i * size);
+        ctx.lineTo(300, i * size);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(i * size, 0);
+        ctx.lineTo(i * size, 300);
+        ctx.stroke();
+    }
+
+    for (let i = 0; i < 9; i++) {
+        const x = (i % 3) * size;
+        const y = Math.floor(i / 3) * size;
+
+        if (board[i] === player) {
+            ctx.beginPath();
+            ctx.moveTo(x+20,y+20);
+            ctx.lineTo(x+80,y+80);
+            ctx.moveTo(x+80,y+20);
+            ctx.lineTo(x+20,y+80);
+            ctx.stroke();
+        }
+        if (board[i] === ia) {
+            ctx.beginPath();
+            ctx.arc(x+50,y+50,30,0,Math.PI*2);
+            ctx.stroke();
+        }
+    }
+}
+
+canvas.addEventListener("click", e => {
+    const rect = canvas.getBoundingClientRect();
+    const x = Math.floor((e.clientX - rect.left) / size);
+    const y = Math.floor((e.clientY - rect.top) / size);
+    const idx = y * 3 + x;
+
+    fetch("/move", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({index: idx})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.board) {
+            board = data.board;
+            draw();
+            if (data.winner !== 0)
+                alert(data.winner === player ? "Você venceu!" : "AI venceu!");
+        }
+    });
+});
+
+function resetGame() {
+    fetch("/reset", {method: "POST"})
+    .then(r => r.json())
+    .then((data) => {
+        console.log(data)
+        if(data.board){
+            board = data.board;
+        } else {
+            board = Array(9).fill(0)
+        }
+        draw();
+    });
+}
+
+draw();
+</script>
+</body>
+</html>
